@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
+const bcrypt = require('bcrypt-nodejs');
 
 // Middle bodyPaser to parse all the body to JSON
 app.use(bodyParser.json());
@@ -23,6 +24,14 @@ const database = {
       entries: 0,
       joined: new Date()
     }
+  ],
+
+  login: [
+    {
+      id: '987',
+      has: '',
+      email: 'john@gmail.com'
+    }
   ]
 }
 
@@ -30,18 +39,41 @@ app.get('/', (req, res)=> {
   res.send(database.users);
 })
 
+
 app.post('/signin', (req, res) => {
+
+  let hash = '$2a$10$/iEaTsE4k29wBEW4AXfnk.wTzKZDjI7afqE4tNdjrCoOGZ90HKX4e';
+
+  // Load hash from your password DB.
+  bcrypt.compare("apples", hash, function(err, res) {
+    // res == true
+    console.log("Guess ", res);
+  });
+  bcrypt.compare("veggies", hash, function(err, res) {
+    // res = false
+    console.log("Wrong ", res);
+  });
+
   if(req.body.email == database.users[0].email &&
   req.body.password == database.users[0].password) {
-    res.json('success');
+    return res.json('success');
   } else {
-    res.status(400).json('error logging in');
+    return res.status(400).json('error logging in');
   }
- res.json('signing');
+ //res.json('signing');
 })
 
+
+let hashPassword;
 app.post('/register', (req, res) => {
+  
   const {name, email, password} = req.body;
+  bcrypt.hash(password, null, null, function(err, hash) {
+    // Store hash in your password DB.
+    console.log(hash);
+    hashPassword = hash;
+  });
+
   database.users.push ( {
       id: '125',
       name: name,
@@ -82,14 +114,19 @@ app.post('/image', (req,res) => {
   }
 })
 
+// bcrypt.hash("bacon", null, null, function(err, hash) {
+//   // Store hash in your password DB.
+// });
+
+// // Load hash from your password DB.
+// bcrypt.compare("bacon", hash, function(err, res) {
+//   // res == true
+// });
+// bcrypt.compare("veggies", hash, function(err, res) {
+//   // res = false
+// });
+
 app.listen(3000, () => {
   console.log('app is running on port 3000');
 });
 
-/*
-/ --> res = this is working
-/signin --> POST = success / fail
-/register --> POST = user
-/profile/:userId --> GET = user
-/image --> PUT --> user 
-*/
