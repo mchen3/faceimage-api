@@ -3,8 +3,12 @@
 const handleRegister = (db, bcrypt) => (req, res) => {
 
   const {name, email, password} = req.body;
+
+  if (!email || !name || !password) {
+    return res.status(400).json("Incorrect form submission");
+  }
+
   const hash = bcrypt.hashSync(password);
-    
     // Use transaction to update both tables, Users and Login
     db.transaction(trx => {
       trx.insert({
