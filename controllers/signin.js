@@ -1,14 +1,20 @@
 
 const handleSignin = (req, res, db, bcrypt) => {
+
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json("Incorrect form submission");
+    }
+
     // Check email and then password with Bcrypt
     db.select('email', 'hash').from('login')
-      .where('email','=',req.body.email)
+      .where('email','=', email)
       .then(data => {
         // Compare the entered password with the hash from Login table
-        const passwordValid = bcrypt.compareSync(req.body.password, data[0].hash);
+        const passwordValid = bcrypt.compareSync(password, data[0].hash);
         if (passwordValid) {
           db.select('*').from('users')
-            .where('email', '=', req.body.email)
+            .where('email', '=', email)
             .then(user => {
                 res.json(user[0]);
             })     
