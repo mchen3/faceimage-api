@@ -6,8 +6,22 @@ const cors = require('cors');
 
 // Middle bodyPaser to parse all the body to JSON
 app.use(bodyParser.json());
-
 app.use(cors());
+const knex = require('knex');
+
+const postgres = knex({
+  client: 'pg',
+  connection: {
+    host : '127.0.0.1',
+    user : 'mikechen',
+    password : '',
+    database : 'faceimage'
+  }
+});
+
+console.log(postgres.select('*').from('users'));
+
+
 
 const database = {
   users: [
@@ -59,7 +73,7 @@ app.post('/signin', (req, res) => {
 
   if(req.body.email == database.users[0].email &&
   req.body.password == database.users[0].password) {
-    return res.json('success');
+    return res.json(database.users[0]);
   } else {
     return res.status(400).json('error logging in');
   }
@@ -81,7 +95,6 @@ app.post('/register', (req, res) => {
       id: '125',
       name: name,
       email: email,
-      password: password,
       entries: 0,
       joined: new Date()
   })
@@ -102,7 +115,7 @@ app.get('/profile/:id', (req, res) => {
   }
 })
 
-app.post('/image', (req,res) => {
+app.put('/image', (req,res) => {
   const { id } = req.body;
   let foundUser = false;
   database.users.forEach(user => {
