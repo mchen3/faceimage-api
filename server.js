@@ -83,28 +83,37 @@ app.post('/signin', (req, res) => {
 
 app.post('/register', (req, res) => {
 
-  // BCrypt
-  let hashPassword;
   const {name, email, password} = req.body;
-  bcrypt.hash(password, null, null, function(err, hash) {
-    // Store hash in your password DB.
-    //console.log(hash);
-    hashPassword = hash;
-  });
-
-  db('users')
-    .returning('*')
-    .insert({
-      name: name,
-      email: email,
-      joined: new Date()
-    })
-    .then(user => {
-      res.json(user[0]);
-    })
-    .catch(err => res.status(400).json("Unable to register"))
   
+  const hash = bcrypt.hashSync(password);
+    
+    // Use transaction to update both tables, Users and Login
+    db.transaction(trx => {
+      trx.insert({
+        hash: hash,
+        email: email
+      })
+      .into('login')
+      .returning('email')
+      .then(loginEmail => {
+        return trx('users')
+          .returning('*')
+          .insert({
+            name: name,
+            email: loginEmail[0],
+            joined: new Date()
+          })
+          .then(user => {
+            res.json(user[0]);
+          })
+          .catch(err => res.status(400).json("Unable to register"))
+      })
+      .then(trx.commit)
+      .catch(trx.rollback)
+    })
 })
+
+
 
 app.get('/profile/:id', (req, res) => {
   const { id } = req.params;
@@ -150,7 +159,6 @@ app.put('/image', (req,res) => {
       res.json(entries[0]);
     })
     .catch(err => res.status(400).json('unable to get entries'));
-
 
 })
 
