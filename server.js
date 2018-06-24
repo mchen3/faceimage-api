@@ -128,23 +128,30 @@ app.get('/profile/:id', (req, res) => {
   // }).select('*').then(user => {
   //   console.log(user);
   //   })
-
-
 })
 
+// Updates entries and increases count
 app.put('/image', (req,res) => {
   const { id } = req.body;
   let foundUser = false;
-  database.users.forEach(user => {
-    if (user.id === id) {
-      foundUser = true;
-      user.entries++;
-      return res.json(user.entries);
-    } 
-  })
-  if(!foundUser) {
-    res.status(400).json("No user found");
-  }
+
+  /*
+  Note- for this function, the increment/decrement
+  will not work without the added 'then' at the end, 
+  not sure why, different from the docs
+  Returning() part is just for the console
+  */
+
+  db('users')
+    .where('id', '=', id)
+    .increment('entries', 1)
+    .returning('entries')
+    .then ( entries => {
+      res.json(entries[0]);
+    })
+    .catch(err => res.status(400).json('unable to get entries'));
+
+
 })
 
 // bcrypt.hash("bacon", null, null, function(err, hash) {
