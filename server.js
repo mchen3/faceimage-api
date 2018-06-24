@@ -106,20 +106,30 @@ app.post('/register', (req, res) => {
   
 })
 
-
-
 app.get('/profile/:id', (req, res) => {
   const { id } = req.params;
-  let foundUser = false;
-  database.users.forEach(user => {
-    if (user.id === id) {
-      foundUser = true;
-      return res.json(user);
-    } 
+
+  // With ES6 - can do where({id}) because id is same
+  db.select('*').from('users').where({
+    id: id
   })
-  if(!foundUser) {
-     res.status(400).json("No user found");
-  }
+    .then(user => {
+      if(user.length) {
+        res.json(user[0]);
+      } else {
+        res.status(400).json('Not found');
+      }
+    })
+    .catch(err => res.status(400).json('error getting user'));
+
+  // Same as above but same syntax from Knex site
+  // db('users').where({
+  //   id: id
+  // }).select('*').then(user => {
+  //   console.log(user);
+  //   })
+
+
 })
 
 app.put('/image', (req,res) => {
