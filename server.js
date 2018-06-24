@@ -56,35 +56,31 @@ app.get('/', (req, res)=> {
   res.send(database.users);
 })
 
-
 app.post('/signin', (req, res) => {
 
-  let hash = '$2a$10$/iEaTsE4k29wBEW4AXfnk.wTzKZDjI7afqE4tNdjrCoOGZ90HKX4e';
-
-  // Load hash from your password DB.
-  bcrypt.compare("apples", hash, function(err, res) {
-    // res == true
-    console.log("Guess ", res);
-  });
-  bcrypt.compare("veggies", hash, function(err, res) {
-    // res = false
-    console.log("Wrong ", res);
-  });
-
-  if(req.body.email == database.users[0].email &&
-  req.body.password == database.users[0].password) {
-    return res.json(database.users[0]);
-  } else {
-    return res.status(400).json('error logging in');
-  }
- //res.json('signing');
+  // Check email and then password with Bcrypt
+  db.select('email', 'hash').from('login')
+    .where('email','=',req.body.email)
+    .then(data => {
+      // Compare the entered password with the hash from Login table
+      const passwordValid = bcrypt.compareSync(req.body.password, data[0].hash);
+      if (passwordValid) {
+        db.select('*').from('users')
+          .where('email', '=', req.body.email)
+          .then(user => {
+              res.json(user[0]);
+          })     
+          .catch(err => res.status(400).json('error getting user'));
+      } else {
+        res.status(400).json('Wrong password');
+      }
+    })
+    .catch(err => res.status(400).json('Wrong credentials'));
 })
-
 
 app.post('/register', (req, res) => {
 
   const {name, email, password} = req.body;
-  
   const hash = bcrypt.hashSync(password);
     
     // Use transaction to update both tables, Users and Login
@@ -112,8 +108,6 @@ app.post('/register', (req, res) => {
       .catch(trx.rollback)
     })
 })
-
-
 
 app.get('/profile/:id', (req, res) => {
   const { id } = req.params;
