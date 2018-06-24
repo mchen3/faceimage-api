@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const app = express();
 const bcrypt = require('bcrypt-nodejs');
 const cors = require('cors');
+const register = require('./controllers/register');
 
 // Middle bodyPaser to parse all the body to JSON
 app.use(bodyParser.json());
@@ -18,39 +19,6 @@ const db = knex({
     database : 'faceimage'
   }
 });
-
-// db.select('*').from('users').then(data => {
-//   console.log(data);
-// });
- 
-const database = {
-  users: [
-    {
-      id: '123',
-      name: 'John',
-      email: 'john@gmail.com',
-      password: 'cookies',
-      entries: 0,
-      joined: new Date()
-    },
-    {
-      id: '124',
-      name: 'Sally',
-      email: 'sally@gmail.com',
-      password: 'bananas',
-      entries: 0,
-      joined: new Date()
-    }
-  ],
-
-  login: [
-    {
-      id: '987',
-      has: '',
-      email: 'john@gmail.com'
-    }
-  ]
-}
 
 app.get('/', (req, res)=> {
   res.send(database.users);
@@ -78,36 +46,8 @@ app.post('/signin', (req, res) => {
     .catch(err => res.status(400).json('Wrong credentials'));
 })
 
-app.post('/register', (req, res) => {
-
-  const {name, email, password} = req.body;
-  const hash = bcrypt.hashSync(password);
-    
-    // Use transaction to update both tables, Users and Login
-    db.transaction(trx => {
-      trx.insert({
-        hash: hash,
-        email: email
-      })
-      .into('login')
-      .returning('email')
-      .then(loginEmail => {
-        return trx('users')
-          .returning('*')
-          .insert({
-            name: name,
-            email: loginEmail[0],
-            joined: new Date()
-          })
-          .then(user => {
-            res.json(user[0]);
-          })
-          .catch(err => res.status(400).json("Unable to register"))
-      })
-      .then(trx.commit)
-      .catch(trx.rollback)
-    })
-})
+// Need 2 extra parameters to pass database and bcrypt, ie dependency injection
+app.post('/register', (req, res) => { register.handleRegister(req,res,db,bcrypt) })
 
 app.get('/profile/:id', (req, res) => {
   const { id } = req.params;
